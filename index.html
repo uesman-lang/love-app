@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Для тебя ❤️</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: #0f0f1a;
+            color: white;
+            font-family: sans-serif;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .heart {
+            font-size: 120px;
+            cursor: pointer;
+            animation: pulse 1s infinite;
+            user-select: none;
+            transition: transform 0.2s;
+        }
+        .heart:active { transform: scale(0.9); }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+            100% { transform: scale(1); }
+        }
+        .hidden { display: none !important; }
+        .question-box {
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 20px;
+            margin-top: 20px;
+            max-width: 320px;
+            animation: fadeIn 0.4s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .question-box p {
+            font-size: 20px;
+            margin: 0 0 15px 0;
+        }
+        button {
+            background: #ff4d6d;
+            border: none;
+            color: white;
+            padding: 12px 24px;
+            margin: 6px;
+            border-radius: 30px;
+            font-size: 17px;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+        }
+        button:hover { background: #ff758f; }
+        button:active { transform: scale(0.95); }
+        .result {
+            font-size: 22px;
+            margin-top: 20px;
+            animation: fadeIn 0.4s ease;
+        }
+        #hint {
+            font-size: 18px;
+            margin-top: 10px;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="heart" id="heart">❤️</div>
+    <p id="hint">Нажми на сердечко</p>
+
+    <div class="question-box hidden" id="questionBox">
+        <p id="questionText"></p>
+        <div id="buttons"></div>
+    </div>
+
+    <div class="result hidden" id="result"></div>
+
+    <script>
+        Telegram.WebApp.ready();
+        Telegram.WebApp.expand();
+
+        const questions = [
+            {
+                text: "Скучаешь по мне?",
+                answers: [
+                    { label: "Очень!", reply: "Я тоже. Каждый день считаю часы до встречи 💞" },
+                    { label: "Ещё как", reply: "Тогда держись, я уже придумываю, как тебя обнять ❤️" },
+                    { label: "Немножко", reply: "Уже хорошо! Буду стараться, чтобы скучала сильнее ❤️" }
+                ]
+            },
+            {
+                text: "Что ты сделаешь первым делом, когда мы встретимся?",
+                answers: [
+                    { label: "Обниму крепко", reply: "И я тебя. Не отпущу минут пять, как минимум ❤️" },
+                    { label: "Поцелую", reply: "Сердце уже стучит быстрее от одной мысли 💘" },
+                    { label: "Сначала посмотрю на тебя", reply: "А я буду стоять и улыбаться как дурак ❤️" }
+                ]
+            },
+            {
+                text: "Что помогает тебе не грустить, когда мы далеко?",
+                answers: [
+                    { label: "Наши сообщения", reply: "Значит, буду писать ещё больше. Ты не отвертишься ❤️" },
+                    { label: "Твой голос", reply: "Тогда я буду говорить с тобой почаще ❤️" },
+                    { label: "Мысль о встрече", reply: "И я считаю дни. Скоро, обещаю ❤️" }
+                ]
+            },
+            {
+                text: "Ты веришь, что у нас всё получится?",
+                answers: [
+                    { label: "Верю!", reply: "Тогда расстояние — это просто временная неудобность ❤️" },
+                    { label: "Конечно", reply: "Я знал, что ты ответишь так. Ты — моя 💞" },
+                    { label: "А ты?", reply: "Верю больше всего на свете. Иначе зачем всё это ❤️ " }
+                ]
+            },
+            {
+                text: "Что ты хочешь услышать от меня чаще?",
+                answers: [
+                    { label: "«Я тебя люблю»", reply: "Я тебя люблю. И буду говорить это чаще 💘" },
+                    { label: "«Скоро увидимся»", reply: "Скоро увидимся. Обещаю. И считаю дни 🗓️" },
+                    { label: "«Ты у меня самая лучшая»", reply: "Ты у меня самая лучшая. Это правда ❤️" }
+                ]
+            }
+        ];
+
+        let currentIndex = 0;
+
+        const heartEl = document.getElementById('heart');
+        const hintEl = document.getElementById('hint');
+        const questionBox = document.getElementById('questionBox');
+        const questionText = document.getElementById('questionText');
+        const buttonsEl = document.getElementById('buttons');
+        const resultEl = document.getElementById('result');
+
+        heartEl.addEventListener('click', showQuestion);
+
+        function showQuestion() {
+            hintEl.classList.add('hidden');
+            heartEl.classList.add('hidden');
+            resultEl.classList.add('hidden');
+            questionBox.classList.remove('hidden');
+
+            const q = questions[currentIndex];
+            questionText.textContent = q.text;
+
+            buttonsEl.innerHTML = '';
+            q.answers.forEach(function(ans) {
+                const btn = document.createElement('button');
+                btn.textContent = ans.label;
+                btn.addEventListener('click', function() {
+                    showResult(ans.reply);
+                });
+                buttonsEl.appendChild(btn);
+            });
+        }
+
+        function showResult(text) {
+            questionBox.classList.add('hidden');
+            resultEl.textContent = text;
+            resultEl.classList.remove('hidden');
+
+            setTimeout(function() {
+                currentIndex++;
+                if (currentIndex < questions.length) {
+                    hintEl.textContent = "Нажми на сердечко ещё раз";
+                    hintEl.classList.remove('hidden');
+                    heartEl.classList.remove('hidden');
+                    resultEl.classList.add('hidden');
+                } else {
+                    resultEl.textContent = "Ты ответила на всё! А я отвечу: люблю тебя котик безумно!!!  ❤️";
+                }
+            }, 2500);
+        }
+    </script>
+</body>
+</html>
